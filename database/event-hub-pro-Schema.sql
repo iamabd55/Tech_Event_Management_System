@@ -1,0 +1,59 @@
+CREATE DATABASE IF NOT EXISTS event_hub_pro CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE event_hub_pro;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('participant','organizer','admin') DEFAULT 'participant',
+  phone VARCHAR(30),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS events (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  venue VARCHAR(255),
+  start_datetime DATETIME,
+  end_datetime DATETIME,
+  capacity INT DEFAULT 0,
+  created_by INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS teams (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  event_id INT NOT NULL,
+  captain_id INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+  FOREIGN KEY (captain_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS registrations (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  event_id INT NOT NULL,
+  team_id INT DEFAULT NULL,
+  status ENUM('registered','checkedin','cancelled') DEFAULT 'registered',
+  registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+  FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL,
+  UNIQUE KEY uniq_user_event (user_id, event_id, team_id)
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT,
+  action VARCHAR(255),
+  meta JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
